@@ -21,7 +21,7 @@ export default async function Dashboard({ params, searchParams }: PageProps<"/s/
   const r = periodRange(period);
   const { supabase, store } = await getStore(slug);
 
-  const [convQ, clicksQ, spendQ, offersQ, queueQ] = await Promise.all([
+  const [convQ, clicksQ, spendQ, offersQ, queueQ, linkQ] = await Promise.all([
     supabase.from("conversions").select("platform, offer_id, product_title, channel_type, ordered_at, commission_value, order_value, status")
       .eq("store_id", store.id).gte("ordered_at", r.prevStart.toISOString()).lt("ordered_at", r.end.toISOString()).limit(10000),
     supabase.from("clicks_daily").select("platform, channel_type, date, clicks").eq("store_id", store.id)
@@ -31,13 +31,17 @@ export default async function Dashboard({ params, searchParams }: PageProps<"/s/
     supabase.from("offers").select("id, price_checked_at, price_from, price_to, products(title, platform)").eq("store_id", store.id).eq("status", "active"),
     supabase.from("scheduled_posts").select("id, scheduled_at, channel_type, status, mode, content_items(body)").eq("store_id", store.id)
       .gte("scheduled_at", periodRange("hoje").start.toISOString()).lt("scheduled_at", periodRange("hoje").end.toISOString()).order("scheduled_at"),
+    supabase.from("link_clicks").select("created_at, channel, offers(products(platform))").eq("store_id", store.id)
+      .gte("created_at", r.prevStart.toISOString()).lt("created_at", r.end.toISOString()).limit(50000),
   ]);
 
   const startKey = r.days[0];
   const conv = ((convQ.data ?? []) as Conv[]).filter((c) => c.status !== "cancelled" && c.ordered_at);
   const cur = conv.filter((c) => new Date(c.ordered_at!) >= r.start);
   const prev = conv.filter((c) => new Date(c.ordered_at!) < r.start);
-  const clicks = clicksQ.data ?? [];
+  const tracked = ((linkQ.data ?? []) as unknown as { created_at: string; channel: string | null; offers: { products: { platform: Platform } | null } | null }[])
+    .map((l) => ({ platform: l.offers?.products?.platform ?? "mercadolivre", channel_type: l.channel ?? "vitrine", date: dayKey(l.created_at), clicks: 1 }));
+  const clicks = [...(clicksQ.data ?? []), ...tracked];
   const spend = spendQ.data ?? [];
   const sum = <T,>(a: T[], f: (x: T) => number) => a.reduce((s, x) => s + f(x), 0);
 

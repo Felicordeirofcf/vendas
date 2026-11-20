@@ -28,7 +28,18 @@ export async function saveStore(_: StoreState, form: FormData): Promise<StoreSta
   const slug = slugify(String(form.get("slug") || name));
   if (!name || !slug) return { error: "Informe o nome da loja." };
 
-  const row = { name, slug, niche: String(form.get("niche") ?? "") || null, brand: brandFrom(form) };
+  const conv = Number(String(form.get("conv_estimate_pct") ?? "").replace(",", "."));
+  const pixel = (k: string) => String(form.get(k) ?? "").trim().replace(/[^A-Za-z0-9_-]/g, "") || null;
+  const row = {
+    name, slug, niche: String(form.get("niche") ?? "") || null, brand: brandFrom(form),
+    is_public: form.get("is_public") === "on",
+    tracking: {
+      meta_pixel_id: pixel("meta_pixel_id"),
+      tiktok_pixel_id: pixel("tiktok_pixel_id"),
+      conv_estimate_pct: Number.isFinite(conv) && conv > 0 ? conv : 2,
+      custom_domain: String(form.get("custom_domain") ?? "").trim().toLowerCase() || null,
+    },
+  };
   let storeId = id;
   if (id) {
     const { error } = await supabase.from("stores").update(row).eq("id", id);

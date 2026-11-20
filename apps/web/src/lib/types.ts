@@ -14,6 +14,13 @@ export type Brand = {
   emoji?: string;
 };
 
+export type Tracking = {
+  meta_pixel_id?: string | null;
+  tiktok_pixel_id?: string | null;
+  conv_estimate_pct?: number | null;
+  custom_domain?: string | null;
+};
+
 export type Store = {
   id: string;
   slug: string;
@@ -22,6 +29,8 @@ export type Store = {
   status: string;
   brand: Brand;
   timezone: string;
+  is_public: boolean;
+  tracking: Tracking;
 };
 
 export type Product = {
@@ -56,7 +65,11 @@ export const PLATFORM_LABEL: Record<Platform, string> = {
   mercadolivre: "Mercado Livre",
 };
 
-export const CHANNEL_LABEL: Record<ChannelType, string> = {
+export const CHANNEL_LABEL: Record<string, string> = {
+  vitrine: "Vitrine",
+  meta: "Anúncio Meta",
+  pinterest: "Pinterest",
+  google: "Google",
   whatsapp_channel: "WhatsApp",
   telegram: "Telegram",
   instagram: "Instagram",

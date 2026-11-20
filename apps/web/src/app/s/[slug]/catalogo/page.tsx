@@ -4,6 +4,8 @@ import { NewOfferForm } from "@/components/importers";
 import { btnSmCls, Card, CardTitle, Empty, inputCls, PageHeader, Pill } from "@/components/ui";
 import { deleteOffer, setOfferStatus, verifyPrice } from "@/lib/actions/offers";
 import { getStore } from "@/lib/data";
+import { siteUrl } from "@/lib/site";
+import { maxCpc } from "@/lib/ads-math";
 import { brl, dateTime, hoursSince, pct } from "@/lib/format";
 import { OFFER_STATUS_LABEL, PLATFORM_LABEL, STALE_HOURS, type Offer, type OfferStatus } from "@/lib/types";
 
@@ -22,6 +24,8 @@ export default async function Catalogo({ params, searchParams }: PageProps<"/s/[
   if (q) query = query.ilike("products.title", `%${q}%`);
   const { data, error } = await query;
   const offers = (data ?? []) as Offer[];
+  const conv = Number(store.tracking?.conv_estimate_pct ?? 2);
+  const site = await siteUrl();
 
   return (
     <>
@@ -52,13 +56,14 @@ export default async function Catalogo({ params, searchParams }: PageProps<"/s/[
           <div className="p-5"><Empty>Nenhuma oferta aqui ainda. Importe links ou adicione abaixo.</Empty></div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-sm">
+            <table className="w-full min-w-[1000px] text-sm">
               <thead className="text-left text-[11px] tracking-wider text-muted">
                 <tr>
                   <th scope="col" className="p-3">PRODUTO</th>
                   <th scope="col" className="p-3">PLATAFORMA</th>
                   <th scope="col" className="p-3">PREÇO</th>
                   <th scope="col" className="p-3">COMISSÃO</th>
+                  <th scope="col" className="p-3" title={`preço × comissão × ${conv}% de conversão`}>CPC MÁX.</th>
                   <th scope="col" className="p-3">VERIFICADO</th>
                   <th scope="col" className="p-3">STATUS</th>
                   <th scope="col" className="p-3 text-right">AÇÕES</th>
@@ -88,6 +93,13 @@ export default async function Catalogo({ params, searchParams }: PageProps<"/s/[
                         {o.discount_pct ? <div className="text-xs font-bold text-green-800">-{pct(Number(o.discount_pct))}</div> : null}
                       </td>
                       <td className="p-3">{o.commission_pct ? pct(Number(o.commission_pct), 1) : "—"}</td>
+                      <td className="p-3 whitespace-nowrap">
+                        {(() => {
+                          const cpc = maxCpc(o.price_to, o.commission_pct, conv);
+                          if (cpc === null) return <span className="text-xs text-muted">informe comissão</span>;
+                          return <span className={`text-sm font-bold ${cpc < 0.3 ? "text-red-800" : "text-green-800"}`}>{brl(cpc)}<span className="block text-[11px] font-normal text-muted">{cpc < 0.3 ? "não compensa anunciar" : "teto por clique"}</span></span>;
+                        })()}
+                      </td>
                       <td className="p-3">
                         <span className={`text-xs ${stale ? "font-bold text-orange-800" : "text-muted"}`}>{dateTime(o.price_checked_at)}{stale ? " · vencido" : ""}</span>
                         <details className="mt-1">
@@ -114,6 +126,7 @@ export default async function Catalogo({ params, searchParams }: PageProps<"/s/[
                         <div className="flex flex-wrap justify-end gap-1">
                           <Link href={`/s/${slug}/conteudo?offer=${o.id}`} className={btnSmCls}>Gerar conteúdo</Link>
                           <CopyButton text={o.affiliate_url} label="Copiar link" className={btnSmCls} />
+                          <CopyButton text={`${site}/r/${o.id}`} label="Link rastreado" className={btnSmCls} />
                           <form action={deleteOffer}>
                             <input type="hidden" name="id" value={o.id} />
                             <button className={`${btnSmCls} text-red-800`} aria-label={`Excluir ${o.products.title}`}>Excluir</button>

@@ -11,6 +11,7 @@ const ICONS: Record<string, string> = {
   calendario: "M3 5h18v16H3zM16 3v4M8 3v4M3 10h18",
   whatsapp: "M21 12a9 9 0 0 1-13.5 7.8L3 21l1.2-4.5A9 9 0 1 1 21 12z",
   telegram: "M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z",
+  paginas: "M3 4h18v16H3zM3 9h18M8 9v11",
   anuncios: "M3 11v2l12 5V6L3 11zM15 9a3 3 0 0 1 0 6M6 13v5h3",
   relatorios: "M6 2h9l5 5v15H6zM14 2v6h6M9 13h7M9 17h7",
   config: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12h2M3 12h2M12 3v2M12 19v2M17 7l1.5-1.5M5.5 18.5L7 17M17 17l1.5 1.5M5.5 5.5L7 7",
@@ -41,6 +42,7 @@ export function Sidebar({ store, stores, badges }: { store: Store; stores: Store
     {
       title: "DISTRIBUIÇÃO",
       items: [
+        { href: `${base}/paginas`, label: "Vitrine e páginas", icon: "paginas" },
         { href: `${base}/fila-whatsapp`, label: "Fila do WhatsApp", icon: "whatsapp", badge: badges.whatsapp },
         { href: `${base}/anuncios`, label: "Anúncios", icon: "anuncios" },
         { href: `${base}/relatorios`, label: "Relatórios", icon: "relatorios" },

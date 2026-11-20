@@ -62,6 +62,16 @@ export function StoreForm({ store, channels = [], accounts = [] }: { store?: Sto
           <Field label="Mercado Livre · apelido / etiqueta"><input className={inputCls} name="mercadolivre_label" defaultValue={acc("mercadolivre")} placeholder="acheipracasa" /></Field>
           <Field label="Shopee · identificação" hint="As chaves da API ficam só em variáveis de ambiente, nunca aqui."><input className={inputCls} name="shopee_label" defaultValue={acc("shopee")} placeholder="conta principal" /></Field>
         </div>
+      </Card>
+      <Card>
+        <CardTitle>Vitrine e anúncios</CardTitle>
+        <div className="grid gap-3">
+          <label className="flex items-center gap-2 text-sm font-semibold"><input type="checkbox" name="is_public" defaultChecked={store?.is_public ?? true} /> Vitrine pública ativa (/v/{store?.slug ?? "sua-loja"})</label>
+          <Field label="ID do Pixel da Meta" hint="Só o número (Gerenciador de Eventos). Não é segredo."><input className={inputCls} name="meta_pixel_id" defaultValue={store?.tracking?.meta_pixel_id ?? ""} inputMode="numeric" /></Field>
+          <Field label="ID do Pixel do TikTok"><input className={inputCls} name="tiktok_pixel_id" defaultValue={store?.tracking?.tiktok_pixel_id ?? ""} /></Field>
+          <Field label="Conversão estimada clique → compra (%)" hint="Usada na calculadora de CPC máximo. Ajuste com os seus dados reais."><input className={inputCls} name="conv_estimate_pct" inputMode="decimal" defaultValue={store?.tracking?.conv_estimate_pct ?? 2} /></Field>
+          <Field label="Domínio próprio (opcional)" hint="Ex.: acheipracasa.com.br — eu ligo na Vercel quando você registrar."><input className={inputCls} name="custom_domain" defaultValue={store?.tracking?.custom_domain ?? ""} /></Field>
+        </div>
         <div className="mt-6 flex items-center gap-3">
           <button className={btnCls} disabled={pending}>{pending ? "Salvando…" : store ? "Salvar alterações" : "Criar loja"}</button>
           {state.error ? <span className="text-sm font-semibold text-red-700" role="alert">{state.error}</span> : null}

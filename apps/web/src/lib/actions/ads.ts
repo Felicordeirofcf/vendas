@@ -10,6 +10,8 @@ export async function createCampaign(form: FormData) {
     platform: String(form.get("platform") || "tiktok_promote"),
     name: String(form.get("name") || "Campanha"),
     offer_id: String(form.get("offer_id") || "") || null,
+    tag: String(form.get("tag") || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "") || null,
+    landing_page_id: String(form.get("landing_page_id") || "") || null,
     started_at: String(form.get("started_at") || "") || null,
     ended_at: String(form.get("ended_at") || "") || null,
   });
