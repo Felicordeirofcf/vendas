@@ -1,4 +1,5 @@
 "use server";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,7 +12,8 @@ export async function authAction(_: AuthState, form: FormData): Promise<AuthStat
   const supabase = await createClient();
 
   if (mode === "resend") {
-    const { error } = await supabase.auth.resend({ type: "signup", email });
+    const origin = (await headers()).get("origin") ?? "";
+    const { error } = await supabase.auth.resend({ type: "signup", email, options: { emailRedirectTo: `${origin}/auth/confirm` } });
     if (error) return { error: error.message };
     return { info: "E-mail de confirmação reenviado. Veja a caixa de entrada e o spam." };
   }
@@ -19,7 +21,8 @@ export async function authAction(_: AuthState, form: FormData): Promise<AuthStat
   if (mode === "signup") {
     const allowed = (process.env.ALLOWED_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
     if (allowed.length && !allowed.includes(email)) return { error: "Cadastro fechado para este e-mail." };
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const origin = (await headers()).get("origin") ?? "";
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${origin}/auth/confirm` } });
     if (error) return { error: error.message };
     if (!data.session) return { info: "Conta criada. Confirme pelo link enviado ao seu e-mail e depois entre." };
   } else {
