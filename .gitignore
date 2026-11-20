@@ -1,0 +1,13 @@
+# segredos — nunca versionar
+.env
+.env.*
+!.env.example
+
+node_modules/
+.next/
+.vercel/
+__pycache__/
+.venv/
+out/
+*.mp4
+.DS_Store

@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+:root {
+  --accent: #ff6b35;
+  --accent-2: #ffd23f;
+  --ink: #2b2b2b;
+  --muted: #6b6862;
+  --line: #e7e5e0;
+  --ground: #f6f5f2;
+}
+
+@theme inline {
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-ground: var(--ground);
+  --font-sans: var(--font-jakarta);
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+}
+
+.tint { background: color-mix(in srgb, var(--accent) 16%, white); }
