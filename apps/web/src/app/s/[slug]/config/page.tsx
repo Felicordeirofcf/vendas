@@ -6,7 +6,7 @@ export default async function Config({ params }: PageProps<"/s/[slug]/config">) 
   const { slug } = await params;
   const { supabase, store } = await getStore(slug);
   const [{ data: channels }, { data: accounts }] = await Promise.all([
-    supabase.from("channels").select("type, handle, url, account_type").eq("store_id", store.id),
+    supabase.from("channels").select("type, handle, url, account_type, config").eq("store_id", store.id),
     supabase.from("affiliate_accounts").select("platform, label").eq("store_id", store.id),
   ]);
   return (

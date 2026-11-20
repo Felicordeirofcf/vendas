@@ -45,7 +45,9 @@ export async function saveStore(_: StoreState, form: FormData): Promise<StoreSta
     handle: String(form.get(`${type}_handle`) ?? "") || null,
     url: String(form.get(`${type}_url`) ?? "") || null,
     account_type: String(form.get(`${type}_account`) ?? "") || null,
-  })).filter((c) => c.handle || c.url);
+    config: type === "telegram" && String(form.get("telegram_chat_id") ?? "").trim()
+      ? { chat_id: String(form.get("telegram_chat_id")).trim() } : {},
+  })).filter((c) => c.handle || c.url || "chat_id" in c.config);
   if (channels.length) {
     const { error } = await supabase.from("channels").upsert(channels, { onConflict: "store_id,type" });
     if (error) return { error: error.message };

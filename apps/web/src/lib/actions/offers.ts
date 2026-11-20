@@ -2,7 +2,8 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/data";
 import { parseMoney } from "@/lib/format";
-import type { OfferStatus, Platform } from "@/lib/types";
+import type { OfferStatus, Platform, ShopeeItem } from "@/lib/types";
+import { shopeeShortLink } from "@/lib/worker";
 
 export type OfferRow = {
   affiliate_url: string;
@@ -14,6 +15,8 @@ export type OfferRow = {
   image_url?: string | null;
   product_url?: string | null;
   category?: string | null;
+  sales_count?: number | null;
+  score?: number | null;
 };
 
 export type ImportResult = { ok: number; updated: number; errors: string[] };
@@ -23,7 +26,7 @@ function shopeeItemId(url?: string | null) {
   return m ? `${m[1]}.${m[2]}` : null;
 }
 
-async function upsertOffers(storeId: string, platform: Platform, rows: OfferRow[], source: "manual" | "csv"): Promise<ImportResult> {
+async function upsertOffers(storeId: string, platform: Platform, rows: OfferRow[], source: "manual" | "csv" | "shopee_api"): Promise<ImportResult> {
   const { supabase } = await requireUser();
   const res: ImportResult = { ok: 0, updated: 0, errors: [] };
 
@@ -47,7 +50,9 @@ async function upsertOffers(storeId: string, platform: Platform, rows: OfferRow[
       const { error } = await supabase.from("offers").update({
         price_from: priceFrom, price_to: priceTo, commission_pct: commission,
         price_checked_at: new Date().toISOString(), status: "active",
+        ...(r.score != null ? { score: r.score } : {}),
       }).eq("id", existing.id);
+      if (r.sales_count != null) await supabase.from("products").update({ sales_count: r.sales_count }).eq("id", existing.product_id);
       if (error) res.errors.push(`Linha ${i + 1}: ${error.message}`);
       else {
         await supabase.from("price_snapshots").insert({ store_id: storeId, offer_id: existing.id, price_from: priceFrom, price_to: priceTo });
@@ -66,13 +71,14 @@ async function upsertOffers(storeId: string, platform: Platform, rows: OfferRow[
       const { data, error } = await supabase.from("products").insert({
         store_id: storeId, platform, external_id: externalId, title,
         image_url: r.image_url || null, product_url: r.product_url || null, category: r.category || null,
+        sales_count: r.sales_count ?? null,
       }).select("id").single();
       if (error) { res.errors.push(`Linha ${i + 1}: ${error.message}`); continue; }
       productId = data.id;
     }
     const { data: offer, error } = await supabase.from("offers").insert({
       store_id: storeId, product_id: productId, affiliate_url: url,
-      price_from: priceFrom, price_to: priceTo, commission_pct: commission, source,
+      price_from: priceFrom, price_to: priceTo, commission_pct: commission, source, score: r.score ?? null,
     }).select("id").single();
     if (error) { res.errors.push(`Linha ${i + 1}: ${error.message}`); continue; }
     await supabase.from("price_snapshots").insert({ store_id: storeId, offer_id: offer.id, price_from: priceFrom, price_to: priceTo });
@@ -139,4 +145,44 @@ export async function deleteOffer(form: FormData) {
   const { supabase } = await requireUser();
   await supabase.from("offers").delete().eq("id", String(form.get("id")));
   revalidatePath(`/s`, "layout");
+}
+
+/** Fase 3: importa um item da busca Shopee (API oficial) → product + offer com shortlink loja|base|item */
+export async function importShopee(_: ImportResult | null, form: FormData): Promise<ImportResult> {
+  const { supabase } = await requireUser();
+  const storeId = String(form.get("store_id"));
+  let item: ShopeeItem;
+  try { item = JSON.parse(String(form.get("item") ?? "")); } catch { return { ok: 0, updated: 0, errors: ["Item inválido"] }; }
+  if (!item?.title || !item.product_url) return { ok: 0, updated: 0, errors: ["Item sem título ou link do produto"] };
+
+  const { data: store } = await supabase.from("stores").select("slug").eq("id", storeId).maybeSingle();
+  if (!store) return { ok: 0, updated: 0, errors: ["Loja não encontrada"] };
+
+  // reimportar o mesmo item atualiza a oferta existente em vez de criar outra
+  const { data: prod } = await supabase.from("products").select("id, offers(affiliate_url, created_at)")
+    .eq("store_id", storeId).eq("platform", "shopee").eq("external_id", item.external_id).maybeSingle();
+  const prev = ((prod?.offers ?? []) as { affiliate_url: string; created_at: string }[])
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+
+  let link = prev?.affiliate_url;
+  if (!link) {
+    try {
+      link = await shopeeShortLink(item.product_url, [store.slug, "base", item.item_id]);
+    } catch (e) {
+      return { ok: 0, updated: 0, errors: [e instanceof Error ? e.message : "Falha ao gerar o link"] };
+    }
+  }
+  return upsertOffers(storeId, "shopee", [{
+    affiliate_url: link,
+    title: item.title,
+    price_from: item.price_from,
+    price_to: item.price_to,
+    commission_pct: item.commission_pct,
+    external_id: item.external_id,
+    image_url: item.image_url,
+    product_url: item.product_url,
+    category: item.category_ids?.length ? String(item.category_ids[item.category_ids.length - 1]) : null,
+    sales_count: item.sales,
+    score: item.score,
+  }], "shopee_api");
 }

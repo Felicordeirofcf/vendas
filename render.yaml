@@ -1,0 +1,33 @@
+# Render Blueprint · worker Python (fases 3 e 4)
+# O agendador roda dentro do processo (RUN_SCHEDULER=true), por isso o serviço não pode "dormir":
+# no plano free o Render suspende após ~15 min sem tráfego e os posts do Telegram deixam de sair.
+services:
+  - type: web
+    name: vendas-worker
+    runtime: python
+    rootDir: worker
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn vendas_worker.app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    numInstances: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: RUN_SCHEDULER
+        value: "true"
+      - key: WORKER_TOKEN
+        generateValue: true
+      # cadastrar os valores no painel do Render (sync: false = nunca no repositório)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SHOPEE_APP_ID
+        sync: false
+      - key: SHOPEE_APP_SECRET
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: SHOPEE_DEFAULT_STORE_SLUG
+        sync: false

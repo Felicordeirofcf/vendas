@@ -7,6 +7,7 @@ gerador de mensagens e legendas, calendário, fila do WhatsApp, anúncios e pain
 
 ```
 apps/web/               Next.js 16 (Vercel) — UI + server actions
+worker/                 Python (Render) — Shopee Affiliate API, conversionReport, bot do Telegram
 supabase/migrations/    Esquema Postgres com RLS por loja
 docs/                   Arquitetura e plano de fases
 ```
@@ -22,7 +23,18 @@ npm run dev
 
 ## Banco
 
-Rode `supabase/migrations/0001_init.sql` no SQL Editor do Supabase (ou `supabase db push`).
+Rode as migrações em ordem (`0001_init.sql`, `0002_shopee_telegram.sql`) no SQL Editor do Supabase (ou `supabase db push`).
+
+## Worker
+
+```bash
+cd worker
+pip install -r requirements.txt pytest
+pytest
+uvicorn vendas_worker.app:app --reload   # variáveis em .env.example
+```
+
+Deploy: Blueprint `render.yaml`. Depois copie `WORKER_TOKEN` e a URL do serviço para a Vercel (`WORKER_TOKEN`, `WORKER_URL`).
 
 ## Regras de conformidade (no código)
 

@@ -4,7 +4,7 @@ import { saveStore, type StoreState } from "@/lib/actions/stores";
 import { btnCls, Card, CardTitle, Field, inputCls } from "@/components/ui";
 import type { Store } from "@/lib/types";
 
-type Channel = { type: string; handle: string | null; url: string | null; account_type: string | null };
+type Channel = { type: string; handle: string | null; url: string | null; account_type: string | null; config?: { chat_id?: string } | null };
 type Account = { platform: string; label: string };
 
 const CH = [
@@ -52,6 +52,13 @@ export function StoreForm({ store, channels = [], accounts = [] }: { store?: Sto
               <input aria-label={`${c.label}: perfil`} className={inputCls} name={`${c.type}_handle`} defaultValue={ch(c.type)?.handle ?? ""} placeholder={c.ph} />
               <input aria-label={`${c.label}: link`} className={inputCls} name={`${c.type}_url`} defaultValue={ch(c.type)?.url ?? ""} placeholder="https://…" />
               <input aria-label={`${c.label}: tipo de conta`} className={inputCls} name={`${c.type}_account`} defaultValue={ch(c.type)?.account_type ?? ""} placeholder="criador / pessoal" />
+              {c.type === "telegram" ? (
+                <div className="sm:col-span-3">
+                  <Field label="Telegram · chat_id do bot" hint="@canal ou -100…; o bot precisa ser administrador do canal. O token fica só no worker.">
+                    <input className={inputCls} name="telegram_chat_id" defaultValue={ch("telegram")?.config?.chat_id ?? ""} placeholder="@acheipracasa ou -1001234567890" />
+                  </Field>
+                </div>
+              ) : null}
             </fieldset>
           ))}
         </div>

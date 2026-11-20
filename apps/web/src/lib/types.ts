@@ -85,5 +85,35 @@ export const OFFER_STATUS_LABEL: Record<OfferStatus, string> = {
   expired: "Expirada",
 };
 
+/** Código do canal no subId da Shopee (loja|canal|post) */
+export const CHANNEL_SUBID: Record<ChannelType, string> = {
+  whatsapp_channel: "wa",
+  telegram: "tg",
+  instagram: "ig",
+  tiktok: "tt",
+};
+
+/** Item normalizado pelo worker a partir do productOfferV2 */
+export type ShopeeItem = {
+  item_id: string;
+  shop_id: string;
+  external_id: string;
+  title: string;
+  image_url: string | null;
+  product_url: string | null;
+  offer_link: string | null;
+  price_to: number | null;
+  price_from: number | null;
+  discount_pct: number | null;
+  sales: number;
+  rating: number | null;
+  commission_pct: number | null;
+  commission_value: number | null;
+  shop_name: string | null;
+  category_ids: number[];
+  period_end: number | null;
+  score: number;
+};
+
 /** Horas sem verificação até o preço ser considerado vencido */
 export const STALE_HOURS: Record<Platform, number> = { mercadolivre: 24, shopee: 6 };
