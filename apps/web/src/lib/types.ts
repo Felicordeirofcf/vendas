@@ -99,4 +99,4 @@ export const OFFER_STATUS_LABEL: Record<OfferStatus, string> = {
 };
 
 /** Horas sem verificação até o preço ser considerado vencido */
-export const STALE_HOURS: Record<Platform, number> = { mercadolivre: 24, shopee: 6 };
+export const STALE_HOURS: Record<Platform, number> = { mercadolivre: 24, shopee: 24 };
