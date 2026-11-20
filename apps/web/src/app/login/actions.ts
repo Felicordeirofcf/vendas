@@ -2,13 +2,19 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export type AuthState = { error?: string; info?: string };
+export type AuthState = { error?: string; info?: string; unconfirmed?: boolean };
 
 export async function authAction(_: AuthState, form: FormData): Promise<AuthState> {
   const email = String(form.get("email") ?? "").trim().toLowerCase();
   const password = String(form.get("password") ?? "");
-  const mode = String(form.get("mode") ?? "signin");
+  const mode = String(form.getAll("mode").at(-1) ?? "signin");
   const supabase = await createClient();
+
+  if (mode === "resend") {
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    if (error) return { error: error.message };
+    return { info: "E-mail de confirmação reenviado. Veja a caixa de entrada e o spam." };
+  }
 
   if (mode === "signup") {
     const allowed = (process.env.ALLOWED_EMAILS ?? "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
@@ -18,6 +24,9 @@ export async function authAction(_: AuthState, form: FormData): Promise<AuthStat
     if (!data.session) return { info: "Conta criada. Confirme pelo link enviado ao seu e-mail e depois entre." };
   } else {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error?.code === "email_not_confirmed") {
+      return { error: "Seu e-mail ainda não foi confirmado. Abra o link que o Supabase enviou (veja o spam) ou reenvie abaixo.", unconfirmed: true };
+    }
     if (error) return { error: "E-mail ou senha inválidos." };
   }
   redirect("/");
